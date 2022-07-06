@@ -45,8 +45,8 @@ const AttributeForm = (props) => {
           createAttribute(
             { ...values, parent: location?.state?.parent },
             {
-              onSuccess: () => {
-                message.success(`Created ${values.name} to attribute list`);
+              onSuccess: (res) => {
+                message.success(`Created ${res.name} to attribute list`);
                 history.goBack();
               },
             }
@@ -56,8 +56,8 @@ const AttributeForm = (props) => {
         updateAttribute(
           { ...values, ...location.state },
           {
-            onSuccess: () => {
-              message.success(`Updated ${values.name} to attribute list`);
+            onSuccess: (res) => {
+              message.success(`${res.name} Updated `);
             },
           }
         );

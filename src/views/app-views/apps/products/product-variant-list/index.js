@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import {
   Card,
   Table,
-  Select,
   Input,
   Button,
-  Badge,
   Menu,
   Tag,
   Modal,
   message,
+  Space,
 } from "antd";
 import ProductListData from "assets/data/product-list.data.json";
 import {
@@ -24,42 +23,10 @@ import Flex from "components/shared-components/Flex";
 import NumberFormat from "react-number-format";
 import { useHistory } from "react-router-dom";
 import utils from "utils";
-import { useProductList } from "../services/queries/use-product-list";
-import { useDeleteProduct } from "../services/mutations/use-delete-product";
+import { useProductVariantList } from "../services/queries/use-product-variant-list";
+import { useDeleteVariant } from "../services/mutations/use-delete-variant";
 
-const { Option } = Select;
-
-const getStockStatus = (stockCount) => {
-  if (stockCount >= 10) {
-    return (
-      <>
-        <Badge status="success" />
-        <span>In Stock</span>
-      </>
-    );
-  }
-  if (stockCount < 10 && stockCount > 0) {
-    return (
-      <>
-        <Badge status="warning" />
-        <span>Limited Stock</span>
-      </>
-    );
-  }
-  if (stockCount === 0) {
-    return (
-      <>
-        <Badge status="error" />
-        <span>Out of Stock</span>
-      </>
-    );
-  }
-  return null;
-};
-
-const categories = ["Cloths", "Bags", "Shoes", "Watches", "Devices"];
-
-const ProductList = () => {
+const ProductVariantList = ({ id }) => {
   let history = useHistory();
   const [list, setList] = useState(ProductListData);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -67,9 +34,10 @@ const ProductList = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
-  const { data: productList, isLoading: productListLoading } = useProductList();
+  const { data: productList, isLoading: productListLoading } =
+    useProductVariantList(id);
   const { mutate: deleteProduct, isLoading: deleteProductLoading } =
-    useDeleteProduct(selectedRow?.id);
+    useDeleteVariant(selectedRow?.id);
 
   const dropdownMenu = (row) => (
     <Menu>
@@ -93,11 +61,13 @@ const ProductList = () => {
   );
 
   const addProduct = () => {
-    history.push(`/app/apps/products/add-product`);
+    history.push(`/app/apps/products/edit-product/${id}/add-variant`);
   };
 
   const viewDetails = (row) => {
-    history.push(`/app/apps/products/edit-product/${row.id}`);
+    history.push(
+      `/app/apps/products/edit-product/${id}/edit-variant/${row.id}`
+    );
   };
 
   const tableColumns = [
@@ -106,14 +76,14 @@ const ProductList = () => {
       dataIndex: "id",
     },
     {
-      title: "Product",
+      title: "Name",
       dataIndex: "name",
       render: (_, record) => (
         <div className="d-flex">
           <AvatarStatus
             size={60}
             type="square"
-            src={record.image.file}
+            src={record.images[0].file}
             name={record.name}
           />
         </div>
@@ -121,9 +91,9 @@ const ProductList = () => {
       sorter: (a, b) => utils.antdTableSorter(a, b, "name"),
     },
     {
-      title: "Category",
-      dataIndex: "category",
-      sorter: (a, b) => utils.antdTableSorter(a, b, "category"),
+      title: "Quantity",
+      dataIndex: "quantity",
+      sorter: (a, b) => utils.antdTableSorter(a, b, "quantity"),
     },
     {
       title: "Price",
@@ -153,6 +123,19 @@ const ProductList = () => {
       sorter: (a, b) => utils.antdTableSorter(a, b, "stock"),
     },
     {
+      title: "Attributes",
+      dataIndex: "attribute_values",
+      render: (stock, record) => (
+        <Space direction="vertical">
+          {record.attribute_values.map((val) => (
+            <Tag className="text-capitalize" color={"default"}>
+              {val.attribute.name}: {val.value}
+            </Tag>
+          ))}
+        </Space>
+      ),
+    },
+    {
       title: "",
       dataIndex: "actions",
       render: (_, elm) => (
@@ -179,7 +162,7 @@ const ProductList = () => {
       {},
       {
         onSuccess: () => {
-          message.success("Product succesfully deleted!");
+          message.success("Variant succesfully deleted!");
         },
         onSettled: () => {
           handleDeleteCancel();
@@ -196,21 +179,11 @@ const ProductList = () => {
     setSelectedRowKeys([]);
   };
 
-  const handleShowCategory = (value) => {
-    if (value !== "All") {
-      const key = "category";
-      const data = utils.filterArray(ProductListData, key, value);
-      setList(data);
-    } else {
-      setList(ProductListData);
-    }
-  };
-
   return (
     <Card>
       <Modal
         visible={isDeleteModalOpen}
-        title="Delete banner"
+        title="Delete variant"
         onCancel={handleDeleteCancel}
         onOk={handleDeleteProduct}
         footer={[
@@ -222,7 +195,7 @@ const ProductList = () => {
             Delete
           </Button>,
         ]}>
-        Are you sure want to delete this Product?.
+        Are you sure want to delete this Varinat?.
       </Modal>
       <Flex alignItems="center" justifyContent="between" mobileFlex={false}>
         <Flex className="mb-1" mobileFlex={false}>
@@ -233,21 +206,6 @@ const ProductList = () => {
               onChange={(e) => onSearch(e)}
             />
           </div>
-          <div className="mb-3">
-            <Select
-              defaultValue="All"
-              className="w-100"
-              style={{ minWidth: 180 }}
-              onChange={handleShowCategory}
-              placeholder="Category">
-              <Option value="All">All</Option>
-              {categories.map((elm) => (
-                <Option key={elm} value={elm}>
-                  {elm}
-                </Option>
-              ))}
-            </Select>
-          </div>
         </Flex>
         <div>
           <Button
@@ -255,7 +213,7 @@ const ProductList = () => {
             type="primary"
             icon={<PlusCircleOutlined />}
             block>
-            Add product
+            Add Variant
           </Button>
         </div>
       </Flex>
@@ -277,4 +235,4 @@ const ProductList = () => {
   );
 };
 
-export default ProductList;
+export default ProductVariantList;

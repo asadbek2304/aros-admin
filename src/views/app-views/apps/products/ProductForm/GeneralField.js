@@ -9,13 +9,12 @@ import {
   InputNumber,
   message,
   Tabs,
-  Cascader,
+  Select,
 } from "antd";
 import { ImageSvg } from "assets/svg/icon";
 import CustomIcon from "components/util-components/CustomIcon";
 import { LoadingOutlined } from "@ant-design/icons";
-import { LANGUAGES } from "configs/AppConfig";
-import { useCategoryList } from "../../category/services/queries/use-category-list";
+import { API_BASE_URL, LANGUAGES } from "configs/AppConfig";
 
 const { Dragger } = Upload;
 
@@ -26,7 +25,12 @@ const rules = {
       message: "Please enter product name",
     },
   ],
-
+  category: [
+    {
+      required: true,
+      message: "Please choose a category",
+    },
+  ],
   price: [
     {
       required: true,
@@ -37,10 +41,10 @@ const rules = {
 
 const imageUploadProps = {
   name: "file",
-  multiple: true,
+  multiple: false,
   listType: "picture-card",
   showUploadList: false,
-  action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
+  action: `${API_BASE_URL}v1/file/`,
 };
 
 const beforeUpload = (file) => {
@@ -56,14 +60,9 @@ const beforeUpload = (file) => {
 };
 
 const { TabPane } = Tabs;
-
-const filter = (inputValue, path) =>
-  path.some(
-    option => (option.name).toLowerCase().indexOf(inputValue.toLowerCase()) > -1,
-  );
+const { Option } = Select;
 
 const GeneralField = (props) => {
-  const { data: categoryList } = useCategoryList();
   return (
     <Row gutter={16}>
       <Col xs={24} sm={24} md={17}>
@@ -123,13 +122,16 @@ const GeneralField = (props) => {
           </Dragger>
         </Card>
         <Card title="Organization">
-          <Form.Item name="category" label="Category">
-            <Cascader
-              fieldNames={{ label: "name", value: "id", children: "children" }}
-              options={categoryList?.results}
-              placeholder="Please select Category"
-			  showSearch={{filter}}
-            />
+          <Form.Item rules={rules.category} name="category" label="Category">
+            <Select
+              fieldNames={{ label: "name", value: "id" }}
+              placeholder="Please select Category">
+              {props.categories?.map((cat) => (
+                <Option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
         </Card>
       </Col>

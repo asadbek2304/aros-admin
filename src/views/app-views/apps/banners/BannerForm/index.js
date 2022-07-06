@@ -34,6 +34,7 @@ const BannerForm = (props) => {
       });
       setImage(bannerDetail?.image?.id);
     }
+
   }, [form, mode, param, props, bannerDetail]);
 
   const onFinish = () => {
@@ -107,7 +108,7 @@ const BannerForm = (props) => {
         </PageHeaderAlt>
         <div className="container" style={{ marginTop: "6rem" }}>
           <FileUpload
-            previous={bannerDetail?.image?.file}
+            previous={mode === "EDIT" ? bannerDetail?.image?.file: undefined}
             onChange={(image) => setImage(image)}>
             {({ handleClick, isLoading, preview, handleDelete }) => (
               <GeneralField

@@ -3,7 +3,7 @@ import { useQuery } from "react-query";
 
 export const useAttributeValueList = (attributeId, mode) =>
   useQuery(
-    "attributevaluelist",
+    ["attributevaluelist", attributeId],
     () =>
       request
         .get(`v1/product/attribute_value/?attribute=${attributeId}`)

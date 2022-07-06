@@ -3,14 +3,14 @@ import PageHeaderAlt from "components/layout-components/PageHeaderAlt";
 import { Tabs, Form, Button, message } from "antd";
 import Flex from "components/shared-components/Flex";
 import GeneralField from "./GeneralField";
-import VariationField from "./VariationField";
-import { useFileUpload } from "services/use-file-upload";
 import { useCreateProduct } from "../services/mutations/use-create-product";
-import { useCallback } from "react";
+import ProductVariantList from "../product-variant-list";
 import { useHistory } from "react-router-dom";
 import { useProductDetail } from "../services/queries/use-product-detail";
 import { LANGUAGES } from "configs/AppConfig";
 import { useUpdateProduct } from "../services/mutations/use-update-product";
+import { useCategoryList } from "../../category/services/queries/use-category-list";
+import renderObject from "utils/splash-nested-object";
 
 const { TabPane } = Tabs;
 
@@ -20,16 +20,17 @@ const EDIT = "EDIT";
 const ProductForm = (props) => {
   const { mode = ADD, param } = props;
   const history = useHistory();
+  const [uploadedImg, setImage] = useState();
 
   const [form] = Form.useForm();
-  const [uploadedImg, setImage] = useState({});
 
   const { data: productDetail, isLoading: productDetailLoading } =
     useProductDetail(param?.id);
+  const { data: categoryList } = useCategoryList();
+  const fullCategorylist = renderObject(categoryList?.results);
 
   const { mutate: createProduct, isLoading: createProductLoading } =
     useCreateProduct();
-  const { mutate: uploadImage, isLoading: fileUploadLoading } = useFileUpload();
   const { mutate: updateProduct, isLoading: updateProductLoading } =
     useUpdateProduct(param?.id);
 
@@ -44,23 +45,17 @@ const ProductForm = (props) => {
       form.setFieldsValue({
         ...names,
         price: productDetail?.price,
+        category: fullCategorylist?.find(
+          (cat) => cat.id === productDetail?.category
+        )?.id,
       });
       setImage(productDetail?.image);
     }
   }, [form, mode, param, props, productDetail]);
 
-  const handleUploadChange = useCallback(
-    (info) => {
-      const formData = new FormData();
-      formData.append("file", info.file.originFileObj);
-      uploadImage(formData, {
-        onSuccess: (res) => {
-          setImage(res);
-        },
-      });
-    },
-    [uploadImage]
-  );
+  const handleUploadChange = (info) => {
+    setImage(info.file.response);
+  };
 
   const onFinish = () => {
     form
@@ -71,11 +66,10 @@ const ProductForm = (props) => {
             {
               ...values,
               image: uploadedImg?.id,
-              category: values.category.at(-1),
             },
             {
               onSuccess: (res) => {
-                message.success(`Created ${values.name} to product list`);
+                message.success(`Created ${res.name} to product list`);
                 history.push(`/app/apps/products/edit-product/${res.id}`);
               },
             }
@@ -85,8 +79,7 @@ const ProductForm = (props) => {
           updateProduct(
             {
               ...values,
-              image: uploadedImg?.id,
-              category: values.category.at(-1),
+              image: uploadedImg?.id || productDetail?.image.id,
             },
             {
               onSuccess: () => {
@@ -125,7 +118,9 @@ const ProductForm = (props) => {
                 {mode === "ADD" ? "Add New Product" : `Edit Product`}{" "}
               </h2>
               <div className="mb-3">
-                <Button className="mr-2">Discard</Button>
+                <Button className="mr-2" onClick={() => history.goBack()}>
+                  Discard
+                </Button>
                 <Button
                   type="primary"
                   onClick={() => onFinish()}
@@ -145,14 +140,15 @@ const ProductForm = (props) => {
           <Tabs defaultActiveKey="1" style={{ marginTop: 30 }}>
             <TabPane tab="General" key="1">
               <GeneralField
+                categories={fullCategorylist}
                 uploadedImg={uploadedImg?.file}
-                uploadLoading={fileUploadLoading}
+                uploadLoading={!!uploadedImg}
                 handleUploadChange={handleUploadChange}
               />
             </TabPane>
             {mode === "EDIT" && (
               <TabPane tab="Variation" key="2">
-                <VariationField />
+                <ProductVariantList id={param?.id} />
               </TabPane>
             )}
           </Tabs>
